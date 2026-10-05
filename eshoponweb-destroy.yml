@@ -17,7 +17,7 @@ on:
 
 env:
   RESOURCE-GROUP: rg-az400-eshopeonweb-lab001
-  SUBSCRIPTION-ID: ec9876a3-fa1f-4980-b053-bca7123aedd5
+  SUBSCRIPTION-ID: 
   WEBAPP-NAME: eshoponweb-webapp-lab001
 
 jobs:
