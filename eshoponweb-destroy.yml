@@ -1,0 +1,60 @@
+name: eShopOnWeb Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "What to delete"
+        required: true
+        default: "delete-resources-only"
+        type: choice
+        options:
+          - delete-resources-only
+          - delete-resource-group
+      confirm:
+        description: 'Type "destroy" to confirm'
+        required: true
+
+env:
+  RESOURCE-GROUP: rg-az400-eshopeonweb-lab001
+  SUBSCRIPTION-ID: ec9876a3-fa1f-4980-b053-bca7123aedd5
+  WEBAPP-NAME: eshoponweb-webapp-lab001
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'destroy' }}
+    environment:
+      name: "Development"
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Delete web app and App Service Plan
+        if: ${{ github.event.inputs.mode == 'delete-resources-only' }}
+        uses: Azure/cli@v2
+        with:
+          inlineScript: |
+            az account set --subscription ${{ env.SUBSCRIPTION-ID }}
+            RG="${{ env.RESOURCE-GROUP }}"
+
+            echo "Deleting web app..."
+            az webapp delete --name ${{ env.WEBAPP-NAME }} --resource-group "$RG" || echo "Web app not found"
+
+            echo "Deleting App Service Plans..."
+            for plan in $(az appservice plan list -g "$RG" --query "[].name" -o tsv); do
+              az appservice plan delete --name "$plan" --resource-group "$RG" --yes
+            done
+
+            echo "Remaining resources:"
+            az resource list -g "$RG" -o table
+
+      - name: Delete entire resource group
+        if: ${{ github.event.inputs.mode == 'delete-resource-group' }}
+        uses: Azure/cli@v2
+        with:
+          inlineScript: |
+            az account set --subscription ${{ env.SUBSCRIPTION-ID }}
+            az group delete --name ${{ env.RESOURCE-GROUP }} --yes
